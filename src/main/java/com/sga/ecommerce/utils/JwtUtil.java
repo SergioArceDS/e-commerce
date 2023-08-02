@@ -3,9 +3,13 @@ package com.sga.ecommerce.utils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import java.security.Key;
+import java.security.PrivateKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +18,7 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    public static final String SECRET = "SGA2023";
+    private static final String SECRET = "SGA2023SGA2023SGA2002KSF8444JJJ565DKDJ33DSJDJ455566LLFJFJ32222225JGMVJGFJ6J4MFDMFJ4J4";
 
     public String extractUsername(String token){
         return extractClaim(token, Claims::getSubject);
@@ -57,7 +61,8 @@ public class JwtUtil {
                 .setSubject(username)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis()+1000*60*30))
-                .signWith(SignatureAlgorithm.ES256, SECRET.getBytes())
+                .signWith(Keys.hmacShaKeyFor(SECRET.getBytes()))
                 .compact();
     }
+
 }
