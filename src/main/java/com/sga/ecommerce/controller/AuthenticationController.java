@@ -1,6 +1,7 @@
 package com.sga.ecommerce.controller;
 
 import com.fasterxml.jackson.core.io.JsonEOFException;
+import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.sga.ecommerce.dto.AuthenticationRequest;
 import com.sga.ecommerce.dto.AuthenticationResponse;
 import com.sga.ecommerce.entities.User;
@@ -9,6 +10,8 @@ import com.sga.ecommerce.service.user.UserService;
 import com.sga.ecommerce.utils.JwtUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletResponse;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -41,21 +44,33 @@ public class AuthenticationController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    public static final String TOKEN_PREFIX = "Bearer ";
+    public static final String HEADER_STRING = "Authorization";
+
     @PostMapping("/authenticate")
-    public AuthenticationResponse createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest, HttpServletResponse response) throws BadCredentialsException, DisabledException, UsernameNotFoundException, IOException, JsonEOFException, ServletException {
+    public void createAuthenticationToken(@RequestBody AuthenticationRequest authenticationRequest, HttpServletResponse response) throws BadCredentialsException, DisabledException, UsernameNotFoundException, IOException, JsonEOFException, ServletException, JSONException {
         try{
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword()));
         }catch (BadCredentialsException e){
             throw new BadCredentialsException("Nombre de usuario o contraseña incorrectos.");
         }catch (DisabledException disabledException){
             response.sendError(HttpServletResponse.SC_NOT_ACCEPTABLE, "Usuario no activado.");
-            return null;
+            return;
         }
 
         final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getUsername());
         User user = userRepository.findFirstByEmail(authenticationRequest.getUsername());
         final String jwt = jwtUtil.generateToken(authenticationRequest.getUsername());
 
-        return new AuthenticationResponse(jwt);
+        //return new AuthenticationResponse(jwt);
+        response.getWriter().write(new JSONObject()
+                .put("userId", user.getId())
+                .put("role", user.getUserRole())
+                .toString()
+        );
+
+        response.addHeader("Access-Control-Expose-Headers", "Authorization");
+        response.addHeader("Access-Control-Allow-Headers", "Authorization,X-PINGGOTHER,Origin,X-Requested-With,Content-Type,Accept,X-Custom-header");
+        response.addHeader(HEADER_STRING, TOKEN_PREFIX + jwt);
     }
 }
